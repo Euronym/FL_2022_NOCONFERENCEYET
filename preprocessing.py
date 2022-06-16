@@ -73,7 +73,6 @@ def build_user_time_series(user_data):
 
     equilibrated_dict = equilibrate_data(sensor_dict)
     return pd.DataFrame(equilibrated_dict)
-
 '''
 users_directory = os.listdir(PATH_ORIGINAL_DATASET)
 for user in users_directory:
@@ -83,6 +82,6 @@ for user in users_directory:
     divide_dataset_per_use(json_file, number)
 '''
 users_root_directory_content = os.listdir(PATH_FOR_DATASET)
-data = read_user_data(user_id=users_root_directory_content, sensor=sensors) 
+data = read_user_data(user_id=users_root_directory_content[-1], sensors=sensors) 
 dataframe = build_user_time_series(data)
-print(dataframe)
+dataframe.to_csv('datasets/users_csv/datatest.csv', index=None, header=True)
