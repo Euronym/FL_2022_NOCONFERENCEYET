@@ -59,6 +59,33 @@ def equilibrate_data(sensor_dict):
         return equilibrate_data(sensor_dict)
     else:
         return sensor_dict
+def slice_time_series(time_series, window_size):
+    count = 0
+    slice, sliced_time_series = [], []
+    for i in range(len(time_series)):
+        count += 1
+        if count == window_size and len(slice) == window_size:
+            sliced_time_series.append(slice)
+            slice = []
+            count = 0
+        slice.append(time_series[i]) 
+    return sliced_time_series 
+def save_as_ts(sliced_dataset, user_id):
+    PATH_TO_TS = PATH_TO_SAVE + f"/{user_id}.ts"
+    # this assumes all data has the same amount of windows 
+    time_series_observations = []
+    for i in range(len(sliced_dataset[0])):
+        time_series_observation = []
+        for j in range(len(sliced_dataset)):
+            time_series_observation.append(sliced_dataset[j][i]) 
+        time_series_observations.append(time_series_observation)
+    with open(PATH_TO_TS, 'w') as file:
+        for observation in time_series_observations:
+            for dimension in observation:
+                dimension_as_string = ",  ".join(map(str, dimension))
+                file.write(dimension_as_string)
+                file.write(":")
+            file.write("\n")
 def build_user_time_series(user_data):
     # the coordinates for analysis
     valid_keys = {'x','y','z'}
@@ -70,9 +97,8 @@ def build_user_time_series(user_data):
                 if measurement_key in valid_keys:
                     column_name = measurement_key.upper() + "_" + str(sensor)
                     sensor_dict[column_name].append(measurament[measurement_key])
-
     equilibrated_dict = equilibrate_data(sensor_dict)
-    return pd.DataFrame(equilibrated_dict)
+    return equilibrated_dict
 '''
 users_directory = os.listdir(PATH_ORIGINAL_DATASET)
 for user in users_directory:
@@ -82,6 +108,9 @@ for user in users_directory:
     divide_dataset_per_use(json_file, number)
 '''
 users_root_directory_content = os.listdir(PATH_FOR_DATASET)
-data = read_user_data(user_id=users_root_directory_content[-1], sensors=sensors) 
-dataframe = build_user_time_series(data)
-dataframe.to_csv('datasets/users_csv/datatest.csv', index=None, header=True)
+for user in users_root_directory_content:
+    data = read_user_data(user_id=user, sensors=sensors) 
+    user_time_series = build_user_time_series(data)
+    #dataframe.to_csv(f'datasets/users_csv/{user}.csv', index=None, header=True)
+    save_as_ts(user_time_series)
+    break
