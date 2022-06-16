@@ -44,6 +44,7 @@ def read_user_data(user_id, sensors):
             if file_size != 0:
                 with open(user_file, 'r') as file:
                     file_data = json.load(file)
+                file_data['timestamp'] = content
                 user_data[sensor] = file_data
             else:
                 continue
@@ -51,14 +52,17 @@ def read_user_data(user_id, sensors):
 def equilibrate_data(sensor_dict):
     size_accelerometer = len(sensor_dict['X_accelerometer'])
     size_gyroscope = len(sensor_dict['X_gyroscope'])
-    if size_accelerometer != size_gyroscope:
-        if size_accelerometer > size_gyroscope:
-            sensor_dict['X_gyroscope'].append(np.nan)
+    if size_accelerometer != 0 and size_gyroscope != 0:
+        if size_accelerometer != size_gyroscope:
+            if size_accelerometer > size_gyroscope:
+                sensor_dict['X_gyroscope'].append(np.nan)
+            else:
+                sensor_dict['X_accelerometer'].append(np.nan)
+            return equilibrate_data(sensor_dict)
         else:
-            sensor_dict['X_accelerometer'].append(np.nan)
-        return equilibrate_data(sensor_dict)
+            return sensor_dict
     else:
-        return sensor_dict
+        return [] 
 def slice_time_series(time_series, window_size):
     count = 0
     slice, sliced_time_series = [], []
@@ -82,7 +86,7 @@ def save_as_ts(sliced_dataset, user_id):
     with open(PATH_TO_TS, 'w') as file:
         for observation in time_series_observations:
             for dimension in observation:
-                dimension_as_string = ",  ".join(map(str, dimension))
+                dimension_as_string = ",".join(map(str, dimension))
                 file.write(dimension_as_string)
                 file.write(":")
             file.write("\n")
@@ -90,13 +94,15 @@ def build_user_time_series(user_data):
     # the coordinates for analysis
     valid_keys = {'x','y','z'}
     sensor_dict = {'X_accelerometer': [], 'Y_accelerometer': [], 'Z_accelerometer': [], 
-                    'X_gyroscope': [], 'Y_gyroscope': [], 'Z_gyroscope': []}
+                    'X_gyroscope': [], 'Y_gyroscope': [], 'Z_gyroscope': [], 'timestamp': []}
     for sensor in user_data.keys():
         for measurament in user_data[sensor]:
             for measurement_key in measurament.keys():
                 if measurement_key in valid_keys:
                     column_name = measurement_key.upper() + "_" + str(sensor)
                     sensor_dict[column_name].append(measurament[measurement_key])
+                elif measurament == 'timestamp' and sensor == 'accelerometer':
+                    sensor_dict['timestamp'].append(measurement_key[measurement_key])
     equilibrated_dict = equilibrate_data(sensor_dict)
     return equilibrated_dict
 '''
