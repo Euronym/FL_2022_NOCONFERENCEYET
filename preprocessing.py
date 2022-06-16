@@ -80,6 +80,8 @@ def save_as_ts(sliced_dataset, user_id):
                 file.write(dimension_as_string)
                 file.write(":")
             file.write("\n")
+def build_centralized_dataset():
+    pass
 def build_user_time_series(user_data):
     # the coordinates for analysis
     valid_keys = {'x','y','z'}
