@@ -53,25 +53,32 @@ def equilibrate_data(sensor_dict):
     size_gyroscope = len(sensor_dict['X_gyroscope'])
     if size_accelerometer != size_gyroscope:
         if size_accelerometer > size_gyroscope:
-            sensor_dict['X_gyroscope'].append(np.nan)
+            sensor_dict['X_accelerometer'].pop(-1)
+            sensor_dict['Y_accelerometer'].pop(-1)
+            sensor_dict['Z_accelerometer'].pop(-1)
         else:
-            sensor_dict['X_accelerometer'].append(np.nan)
+            sensor_dict['X_gyroscope'].pop(-1)
+            sensor_dict['Y_gyroscope'].pop(-1)
+            sensor_dict['Z_gyroscope'].pop(-1)
         return equilibrate_data(sensor_dict)
     else:
         return sensor_dict
 def slice_time_series(time_series, window_size):
-    count = 0
-    slice, sliced_time_series = [], []
-    for i in range(len(time_series)):
-        count += 1
-        if count == window_size and len(slice) == window_size:
-            sliced_time_series.append(slice)
-            slice = []
-            count = 0
-        slice.append(time_series[i]) 
-    return sliced_time_series 
+    sliced_dataset = []
+    for key in time_series.keys():
+        count = 0
+        slice, sliced_time_series = [], []
+        for i in range(len(time_series[key])):
+            count += 1
+            slice.append(time_series[key][i])
+            if count == window_size and len(slice) == window_size:
+                sliced_time_series.append(slice)
+                slice = []
+                count = 0
+        sliced_dataset.append(sliced_time_series)
+    return sliced_dataset 
 def save_as_ts(sliced_dataset, user_id):
-    PATH_TO_TS = PATH_TO_SAVE + f"/{user_id}.ts"
+    PATH_TO_TS = PATH_TO_SAVE + f"{user_id}.ts"
     # this assumes all data has the same amount of windows 
     time_series_observations = []
     for i in range(len(sliced_dataset[0])):
@@ -80,9 +87,11 @@ def save_as_ts(sliced_dataset, user_id):
             time_series_observation.append(sliced_dataset[j][i]) 
         time_series_observations.append(time_series_observation)
     with open(PATH_TO_TS, 'w') as file:
+        keys = 'X_accelerometer,Y_accelerometer,Z_accelerometer,X_gyroscope,Y_gyroscope,Z_gyroscope\n'
+        file.write(keys)
         for observation in time_series_observations:
             for dimension in observation:
-                dimension_as_string = ",  ".join(map(str, dimension))
+                dimension_as_string = ",".join(map(str, dimension))
                 file.write(dimension_as_string)
                 file.write(":")
             file.write("\n")
@@ -109,8 +118,9 @@ for user in users_directory:
 '''
 users_root_directory_content = os.listdir(PATH_FOR_DATASET)
 for user in users_root_directory_content:
+    print(f'runnning user {user}')
     data = read_user_data(user_id=user, sensors=sensors) 
     user_time_series = build_user_time_series(data)
+    sliced_time_series = slice_time_series(user_time_series, window_size=10)
     #dataframe.to_csv(f'datasets/users_csv/{user}.csv', index=None, header=True)
-    save_as_ts(user_time_series)
-    break
+    save_as_ts(sliced_time_series, user_id=user)
