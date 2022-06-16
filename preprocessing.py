@@ -44,7 +44,6 @@ def read_user_data(user_id, sensors):
             if file_size != 0:
                 with open(user_file, 'r') as file:
                     file_data = json.load(file)
-                file_data['timestamp'] = content
                 user_data[sensor] = file_data
             else:
                 continue
@@ -86,16 +85,13 @@ def build_user_time_series(user_data):
     valid_keys = {'x','y','z'}
     sensor_dict = {'X_accelerometer': [], 'Y_accelerometer': [], 'Z_accelerometer': [], 
                     'X_gyroscope': [], 'Y_gyroscope': [], 'Z_gyroscope': []}
-    timestamp = []
     for sensor in user_data.keys():
         for measurament in user_data[sensor]:
             for measurement_key in measurament.keys():
                 if measurement_key in valid_keys:
                     column_name = measurement_key.upper() + "_" + str(sensor)
                     sensor_dict[column_name].append(measurament[measurement_key])
-                elif measurament == 'timestamp' and sensor == 'accelerometer':
-                    timestamp.append(measurament[measurement_key])
-    return timestamp, sensor_dict
+    return sensor_dict
 '''
 users_directory = os.listdir(PATH_ORIGINAL_DATASET)
 for user in users_directory:
@@ -108,7 +104,10 @@ users_root_directory_content = os.listdir(PATH_FOR_DATASET)
 for user in users_root_directory_content:
     print(f'runnning user {user}')
     data = read_user_data(user_id=user, sensors=sensors) 
-    timestamp, user_time_series = build_user_time_series(data)
+    user_time_series = build_user_time_series(data)
     sliced_time_series = slice_time_series(user_time_series, window_size=10)
     #dataframe.to_csv(f'datasets/users_csv/{user}.csv', index=None, header=True)
-    save_as_ts(sliced_time_series, user_id=user)
+    try:
+        save_as_ts(sliced_time_series, user_id=user)
+    except:
+        continue
