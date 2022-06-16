@@ -5,7 +5,7 @@ import os
 
 PATH_ORIGINAL_DATASET = 'datasets/original_dataset/sensors'
 PATH_FOR_DATASET = 'datasets/users_json/'
-PATH_TO_SAVE = 'datasets/users_csv/'
+PATH_TO_SAVE = 'datasets/users_ts/'
 
 sensors = ['accelerometer', 'gyroscope']
 
@@ -48,7 +48,18 @@ def read_user_data(user_id, sensors):
             else:
                 continue
     return user_data
-def build_user_dataframe(user_data):
+def equilibrate_data(sensor_dict):
+    size_accelerometer = len(sensor_dict['X_accelerometer'])
+    size_gyroscope = len(sensor_dict['X_gyroscope'])
+    if size_accelerometer != size_gyroscope:
+        if size_accelerometer > size_gyroscope:
+            sensor_dict['X_gyroscope'].append(np.nan)
+        else:
+            sensor_dict['X_accelerometer'].append(np.nan)
+        return equilibrate_data(sensor_dict)
+    else:
+        return sensor_dict
+def build_user_time_series(user_data):
     # the coordinates for analysis
     valid_keys = {'x','y','z'}
     sensor_dict = {'X_accelerometer': [], 'Y_accelerometer': [], 'Z_accelerometer': [], 
@@ -59,11 +70,12 @@ def build_user_dataframe(user_data):
                 if measurement_key in valid_keys:
                     column_name = measurement_key.upper() + "_" + str(sensor)
                     sensor_dict[column_name].append(measurament[measurement_key])
-    for key in sensor_dict.keys():
-        pass
-    #return pd.DataFrame(sensor_dict) 
-users_directory = os.listdir(PATH_ORIGINAL_DATASET)
+
+    equilibrated_dict = equilibrate_data(sensor_dict)
+    return pd.DataFrame(equilibrated_dict)
+
 '''
+users_directory = os.listdir(PATH_ORIGINAL_DATASET)
 for user in users_directory:
     number = user.split('_')[1].split('.')[0]
     with open(PATH_ORIGINAL_DATASET + user) as file:
@@ -71,7 +83,6 @@ for user in users_directory:
     divide_dataset_per_use(json_file, number)
 '''
 users_root_directory_content = os.listdir(PATH_FOR_DATASET)
-for user_name in users_root_directory_content:
-    data = read_user_data(user_name, sensors=sensors)
-    user_dataframe = build_user_dataframe(data)
-    user_dataframe.to_csv(PATH_TO_SAVE + f'{user_name}.csv', index=None, header=True, sep=',')
+data = read_user_data(user_id=users_root_directory_content, sensor=sensors) 
+dataframe = build_user_time_series(data)
+print(dataframe)
