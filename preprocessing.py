@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import os 
 
-PATH_ORIGINAL_DATASET = 'datasets/original_dataset/sensors'
+PATH_ORIGINAL_DATASET = 'datasets/sensors/'
 PATH_FOR_DATASET = 'datasets/users_json/'
 PATH_TO_SAVE = 'datasets/users_ts/'
 
@@ -18,7 +18,7 @@ def divide_dataset_per_use(json_file, number):
     # get the user id
     user_id = top_level_tags[0]
     # user directory path
-    path_user_directory = cwd + "/datasets/users/" + str(json_file[user_id])
+    path_user_directory = cwd + "/" + PATH_FOR_DATASET + str(json_file[user_id])
     if not os.path.exists(path_user_directory):
         # create directory for the user
         os.mkdir(path_user_directory)
@@ -36,7 +36,8 @@ def divide_dataset_per_use(json_file, number):
             sensor_file.write(sensor_data_json)
 def read_user_data(user_id, sensors): 
     user_data = {}
-    user_directory_content = os.listdir(PATH_FOR_DATASET + f'/{user_id}')
+    user_directory_content = map(float, os.listdir(PATH_FOR_DATASET + f'/{user_id}'))
+    user_directory_content = np.sort(user_directory_content)
     for content in user_directory_content:
         for sensor in sensors:
             user_file = PATH_FOR_DATASET + f'{user_id}/{content}/{sensor}.json'
@@ -94,14 +95,12 @@ def build_user_time_series(user_data):
                     column_name = measurement_key.upper() + "_" + str(sensor)
                     sensor_dict[column_name].append(measurament[measurement_key])
     return sensor_dict
-'''
 users_directory = os.listdir(PATH_ORIGINAL_DATASET)
 for user in users_directory:
     number = user.split('_')[1].split('.')[0]
     with open(PATH_ORIGINAL_DATASET + user) as file:
         json_file = json.load(file)
     divide_dataset_per_use(json_file, number)
-'''
 users_root_directory_content = os.listdir(PATH_FOR_DATASET)
 for user in users_root_directory_content:
     print(f'runnning user {user}')
